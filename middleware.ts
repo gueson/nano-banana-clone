@@ -1,6 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+type Cookie = {
+  name: string
+  value: string
+  options?: {
+    domain?: string
+    expires?: Date
+    httpOnly?: boolean
+    maxAge?: number
+    path?: string
+    sameSite?: 'strict' | 'lax' | 'none'
+    secure?: boolean
+  }
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -14,14 +28,16 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+        setAll(cookiesToSet: Cookie[]) {
+          cookiesToSet.forEach(({ name, value }: Cookie) => {
+            request.cookies.set(name, value)
+          })
           supabaseResponse = NextResponse.next({
             request,
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }: Cookie) => {
             supabaseResponse.cookies.set(name, value, options)
-          )
+          })
         },
       },
     }
@@ -29,7 +45,11 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session if expired - required for Server Components
   // https://supabase.com/docs/guides/auth/server-side/nextjs
-  await supabase.auth.getUser()
+  try {
+    await supabase.auth.getUser()
+  } catch {
+    // Ignore auth errors in middleware - session refresh only
+  }
 
   // Note: We're not forcing login here - the app allows anonymous access
   // If you want to protect certain routes, add route-specific checks
