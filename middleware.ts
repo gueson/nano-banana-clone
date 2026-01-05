@@ -43,13 +43,9 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
+  // The client automatically refreshes the session via onAuthStateChange
+  // No need to explicitly call getSession() or getUser() here
   // https://supabase.com/docs/guides/auth/server-side/nextjs
-  try {
-    await supabase.auth.getSession()
-  } catch {
-    // Ignore auth errors in middleware - session refresh only
-  }
 
   // Note: We're not forcing login here - the app allows anonymous access
   // If you want to protect certain routes, add route-specific checks
