@@ -22,6 +22,9 @@ export function Header() {
           <a href="#testimonials" className="text-sm font-medium hover:text-accent transition-colors">
             Reviews
           </a>
+          <a href="/pricing" className="text-sm font-medium hover:text-accent transition-colors">
+            Pricing
+          </a>
           <a href="#faq" className="text-sm font-medium hover:text-accent transition-colors">
             FAQ
           </a>
