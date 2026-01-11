@@ -16,6 +16,9 @@ Add the following environment variables to your `.env.local` (for local developm
 
 ```bash
 # Creem API Key (get from Creem dashboard)
+# You can provide a single key via CREEM_API_KEY, or split by environment:
+# - CREEM_API_KEY_TEST
+# - CREEM_API_KEY_LIVE
 CREEM_API_KEY=your_creem_api_key_here
 
 # Creem Webhook Secret (for verifying webhook signatures)
@@ -23,14 +26,41 @@ CREEM_WEBHOOK_SECRET=your_webhook_secret_here
 
 # Site URL (for redirect URLs)
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
+
+# Environment switch (recommended)
+# - `test` for local dev / staging
+# - `live` for production
+CREEM_ENV=test
+
+# Live payments gate (recommended):
+# - Keep false during onboarding / compliance review
+# - Set true only after Creem enables live payments for your account
+CREEM_LIVE_PAYMENTS_ENABLED=false
+
+# Optional: Override Creem API base URL directly
+CREEM_API_BASE_URL=https://test-api.creem.io
+
+# Optional: support email shown on site/legal pages
+NEXT_PUBLIC_SUPPORT_EMAIL=support@your-domain.com
 ```
 
-### Optional Variables (Product IDs)
+### Product IDs (Required for checkout)
 
-If you want to use custom product IDs from Creem:
+These are required to start a checkout session (the app will not fall back to placeholder IDs):
 
 ```bash
-# Creem Product IDs (optional, defaults to "pro_monthly" and "enterprise_monthly")
+# Creem Product IDs (recommended: server-only)
+# You can provide a single set, or split by environment:
+CREEM_PRODUCT_PRO_ID_TEST=your_test_pro_product_id
+CREEM_PRODUCT_ENTERPRISE_ID_TEST=your_test_enterprise_product_id
+CREEM_PRODUCT_PRO_ID_LIVE=your_live_pro_product_id
+CREEM_PRODUCT_ENTERPRISE_ID_LIVE=your_live_enterprise_product_id
+
+# Backwards-compatible (single set used for both modes)
+CREEM_PRODUCT_PRO_ID=your_pro_product_id
+CREEM_PRODUCT_ENTERPRISE_ID=your_enterprise_product_id
+
+# Optional: also expose to client (not required for checkout)
 NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID=your_pro_product_id
 NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID=your_enterprise_product_id
 ```
@@ -66,7 +96,6 @@ Creates a checkout session with Creem. Called when user clicks "Subscribe" butto
 **Request Body:**
 ```json
 {
-  "productId": "pro_monthly",
   "planId": "pro"
 }
 ```
@@ -95,12 +124,23 @@ Handles webhook events from Creem. Automatically processes:
    - Complete payment in Creem checkout
    - Verify redirect to success page
 3. Test webhook events using Creem's webhook testing tool
+4. If Creem returns `403 Forbidden`, verify:
+   - `CREEM_API_KEY` is a server API key (not a publishable/client key)
+   - The product IDs belong to the same Creem environment/account as the API key
 
 ## Implementation Notes
 
 - The webhook handler includes TODO comments where you need to integrate with your database
 - Currently, webhook events are logged to console - you should update the database accordingly
 - Consider using Supabase to store subscription status for authenticated users
+- Creem checkout creation uses `POST https://api.creem.io/v1/checkouts` (see Creem API docs)
+- Mode resolution:
+  - Prefer `CREEM_ENV` when set (`test` or `live`)
+  - Otherwise fall back to `CREEM_TEST_MODE`
+  - Otherwise: `test` in development, `live` in production
+- Live payments safety gate:
+  - In `live` mode, the app blocks checkout unless `CREEM_LIVE_PAYMENTS_ENABLED=true` is explicitly set
+  - This prevents accidentally redirecting users to live checkout before account review/onboarding is complete
 
 ## Next Steps
 
@@ -108,4 +148,7 @@ Handles webhook events from Creem. Automatically processes:
 2. Add user authentication checks before checkout
 3. Implement subscription status checks in your app
 4. Add subscription management page for users
+
+
+
 

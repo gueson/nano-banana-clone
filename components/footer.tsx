@@ -1,4 +1,6 @@
 export function Footer() {
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"
+
   return (
     <footer className="border-t border-border py-12 bg-background">
       <div className="container mx-auto px-4">
@@ -38,8 +40,8 @@ export function Footer() {
             <h4 className="font-semibold mb-3">Resources</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#testimonials" className="hover:text-foreground transition-colors">
-                  Reviews
+                <a href="/pricing" className="hover:text-foreground transition-colors">
+                  Pricing
                 </a>
               </li>
               <li>
@@ -48,8 +50,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
-                  Documentation
+                <a href="/terms" className="hover:text-foreground transition-colors">
+                  Terms of Service
                 </a>
               </li>
             </ul>
@@ -59,18 +61,21 @@ export function Footer() {
             <h4 className="font-semibold mb-3">Company</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
-                  About
+                <a href="/privacy" className="hover:text-foreground transition-colors">
+                  Privacy Policy
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-foreground transition-colors">
+                <a
+                  href={`mailto:${supportEmail}`}
+                  className="hover:text-foreground transition-colors"
+                >
+                  Support
+                </a>
+              </li>
+              <li>
+                <a href="/contact" className="hover:text-foreground transition-colors">
                   Contact
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-foreground transition-colors">
-                  Privacy
                 </a>
               </li>
             </ul>
@@ -78,7 +83,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>© 2025 Nano Banana. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Nano Banana. All rights reserved.</p>
         </div>
       </div>
     </footer>

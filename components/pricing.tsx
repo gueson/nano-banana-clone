@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,14 +11,13 @@ type Plan = {
   id: string
   name: string
   price: string
-  priceId?: string // Creem product ID
   description: string
   features: string[]
   popular?: boolean
   buttonText: string
 }
 
-// Get product IDs from environment variables (client-side accessible)
+// Product IDs are resolved server-side in `/api/creem/checkout` to avoid client build-time env issues.
 const getPlans = (): Plan[] => [
   {
     id: "free",
@@ -26,10 +25,10 @@ const getPlans = (): Plan[] => [
     price: "$0",
     description: "Perfect for trying out Nano Banana",
     features: [
-      "10 image generations per month",
+      "Limited monthly generations",
       "Basic image editing",
       "Standard quality output",
-      "Community support",
+      "Email support",
     ],
     buttonText: "Get Started",
   },
@@ -37,15 +36,13 @@ const getPlans = (): Plan[] => [
     id: "pro",
     name: "Pro",
     price: "$9",
-    priceId: process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID || "pro_monthly",
     description: "For professionals and creators",
     features: [
-      "500 image generations per month",
+      "Higher monthly generations",
       "Advanced image editing",
       "High quality output",
       "Priority support",
-      "Commercial license",
-      "API access",
+      "Commercial use",
     ],
     popular: true,
     buttonText: "Subscribe Now",
@@ -54,16 +51,12 @@ const getPlans = (): Plan[] => [
     id: "enterprise",
     name: "Enterprise",
     price: "$29",
-    priceId: process.env.NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID || "enterprise_monthly",
     description: "For teams and businesses",
     features: [
-      "Unlimited image generations",
-      "All Pro features",
-      "Highest quality output",
+      "Custom usage limits",
+      "Team billing",
       "Dedicated support",
-      "Team collaboration",
-      "Custom integrations",
-      "SLA guarantee",
+      "Custom integrations (optional)",
     ],
     buttonText: "Contact Sales",
   },
@@ -71,7 +64,52 @@ const getPlans = (): Plan[] => [
 
 export function Pricing() {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
+  const [creemConfig, setCreemConfig] = useState<{
+    mode: "live" | "test"
+    livePaymentsEnabled: boolean
+    debug?: {
+      baseUrl?: string
+      hasApiKeyTest?: boolean
+      hasApiKeyLive?: boolean
+      hasApiKeyLegacy?: boolean
+      hasProductProTest?: boolean
+      hasProductProLive?: boolean
+      hasProductEnterpriseTest?: boolean
+      hasProductEnterpriseLive?: boolean
+      hasProductLegacyPro?: boolean
+      hasProductLegacyEnterprise?: boolean
+    }
+  } | null>(null)
   const plans = getPlans()
+  const supportEmail =
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
+  const salesEmail =
+    process.env.NEXT_PUBLIC_SALES_EMAIL ||
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL ||
+    "support@lincy.online"
+
+  useEffect(() => {
+    let cancelled = false
+
+    fetch("/api/creem/config")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return
+        if (!data) return
+        setCreemConfig(data)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCreemConfig(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const livePaymentsBlocked =
+    creemConfig?.mode === "live" && creemConfig.livePaymentsEnabled === false
 
   const handleSubscribe = async (plan: Plan) => {
     if (plan.id === "free") {
@@ -82,12 +120,23 @@ export function Pricing() {
 
     if (plan.id === "enterprise") {
       // For enterprise, you might want to open a contact form or email
-      window.location.href = "mailto:sales@nanobanana.ai?subject=Enterprise Plan Inquiry"
+      window.location.href = `mailto:${encodeURIComponent(
+        salesEmail
+      )}?subject=${encodeURIComponent("Enterprise Plan Inquiry")}`
       return
     }
 
-    if (!plan.priceId) {
-      console.error("Product ID not configured for plan:", plan.id)
+    if (plan.id === "pro" && !creemConfig) {
+      alert(
+        `Payment configuration is unavailable. Please refresh and try again. If the issue persists, contact ${supportEmail}.`
+      )
+      return
+    }
+
+    if (plan.id === "pro" && livePaymentsBlocked) {
+      alert(
+        `Live payments are not enabled for this account yet. Complete Creem account verification (or switch to Test Mode) and try again. If you need help, contact ${supportEmail}.`
+      )
       return
     }
 
@@ -101,7 +150,6 @@ export function Pricing() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          productId: plan.priceId,
           planId: plan.id,
         }),
       })
@@ -135,10 +183,32 @@ export function Pricing() {
           <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
             Choose the plan that fits your needs. Upgrade or downgrade at any time.
           </p>
+          {creemConfig && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              {/* <span>
+                Payments mode:{" "}
+                <span className="font-medium text-foreground">
+                  {creemConfig.mode === "test" ? "Test" : "Live"}
+                </span>
+              </span> */}
+              {creemConfig.mode === "live" && creemConfig.livePaymentsEnabled === false && (
+                <span className="text-destructive">
+                  (Live checkout disabled until account review is complete)
+                </span>
+              )}
+              {/* {creemConfig.debug?.baseUrl && (
+                <span className="hidden md:inline">· API: {creemConfig.debug.baseUrl}</span>
+              )} */}
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan) => (
+            (() => {
+              const subscribeBlocked = plan.id === "pro" && livePaymentsBlocked
+
+              return (
             <Card
               key={plan.id}
               className={`relative flex flex-col ${plan.popular ? "border-primary shadow-lg scale-105" : ""}`}
@@ -174,7 +244,7 @@ export function Pricing() {
                   size="lg"
                   variant={plan.popular ? "default" : "outline"}
                   onClick={() => handleSubscribe(plan)}
-                  disabled={loadingPlanId === plan.id}
+                  disabled={loadingPlanId === plan.id || subscribeBlocked}
                 >
                   {loadingPlanId === plan.id ? (
                     <>
@@ -182,19 +252,38 @@ export function Pricing() {
                       Processing...
                     </>
                   ) : (
-                    plan.buttonText
+                    subscribeBlocked ? "Account verification required" : plan.buttonText
                   )}
                 </Button>
               </CardFooter>
             </Card>
+              )
+            })()
           ))}
         </div>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
-          <p>All plans include a 14-day money-back guarantee. Cancel anytime.</p>
+          <p>Cancel anytime. Billing terms are shown at checkout.</p>
+          <p className="mt-2">
+            By subscribing, you agree to our{" "}
+            <a className="underline" href="/terms">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a className="underline" href="/privacy">
+              Privacy Policy
+            </a>
+            .
+          </p>
+          <p className="mt-2">
+            Need help? Email{" "}
+            <a className="underline" href={`mailto:${supportEmail}`}>
+              {supportEmail}
+            </a>
+            .
+          </p>
         </div>
       </div>
     </section>
   )
 }
-

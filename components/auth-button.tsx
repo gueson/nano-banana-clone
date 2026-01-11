@@ -45,7 +45,8 @@ export function AuthButton() {
   }
 
   const handleLogin = () => {
-    window.location.href = "/api/auth/login?provider=google"
+    const next = `${window.location.pathname}${window.location.search}${window.location.hash}`
+    window.location.href = `/api/auth/login?provider=google&next=${encodeURIComponent(next)}`
   }
 
   const handleLogout = async () => {

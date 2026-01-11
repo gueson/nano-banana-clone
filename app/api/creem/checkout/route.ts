@@ -1,5 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+function parseBooleanEnv(value: string | undefined): boolean | undefined {
+  if (value == null) return undefined
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'true' || normalized === '1') return true
+  if (normalized === 'false' || normalized === '0') return false
+  return undefined
+}
+
+function normalizePlanKey(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const normalized = value.trim().toLowerCase()
+  return normalized ? normalized : undefined
+}
+
+function getConfiguredProductId(
+  planKey: string | undefined,
+  mode: 'live' | 'test'
+): string | undefined {
+  if (!planKey) return undefined
+
+  if (planKey === 'pro') {
+    return (
+      (mode === 'live'
+        ? process.env.CREEM_PRODUCT_PRO_ID_LIVE
+        : process.env.CREEM_PRODUCT_PRO_ID_TEST) ||
+      process.env.CREEM_PRODUCT_PRO_ID ||
+      (mode === 'live'
+        ? process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID_LIVE
+        : process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID_TEST) ||
+      process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID
+    )
+  }
+
+  if (planKey === 'enterprise') {
+    return (
+      (mode === 'live'
+        ? process.env.CREEM_PRODUCT_ENTERPRISE_ID_LIVE
+        : process.env.CREEM_PRODUCT_ENTERPRISE_ID_TEST) ||
+      process.env.CREEM_PRODUCT_ENTERPRISE_ID ||
+      (mode === 'live'
+        ? process.env.NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID_LIVE
+        : process.env.NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID_TEST) ||
+      process.env.NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID
+    )
+  }
+
+  return undefined
+}
+
+function resolveCheckoutProductId(input: {
+  planId: unknown
+  productId: unknown
+  mode: 'live' | 'test'
+}): string | undefined {
+  const planKey = normalizePlanKey(input.planId)
+  const rawProductId = typeof input.productId === 'string' ? input.productId.trim() : ''
+
+  // Prefer server-configured product IDs (avoids relying on client-side NEXT_PUBLIC env injection)
+  const fromPlan = getConfiguredProductId(planKey, input.mode)
+  if (fromPlan) return fromPlan
+
+  // Accept explicit Creem product IDs when provided
+  if (rawProductId.startsWith('prod_')) return rawProductId
+
+  // Backwards compatibility: map common placeholder product IDs to env-configured IDs
+  const placeholderKey = normalizePlanKey(rawProductId)
+  if (placeholderKey === 'pro_monthly' || placeholderKey === 'pro-monthly') {
+    return getConfiguredProductId('pro', input.mode)
+  }
+  if (
+    placeholderKey === 'enterprise_monthly' ||
+    placeholderKey === 'enterprise-monthly'
+  ) {
+    return getConfiguredProductId('enterprise', input.mode)
+  }
+
+  return undefined
+}
+
+function getCreemMode(): 'live' | 'test' {
+  const env = (process.env.CREEM_ENV || '').trim().toLowerCase()
+  if (env === 'prod' || env === 'production' || env === 'live') return 'live'
+  if (env === 'test' || env === 'sandbox') return 'test'
+
+  const testMode = parseBooleanEnv(process.env.CREEM_TEST_MODE)
+  if (testMode === true) return 'test'
+  if (testMode === false) return 'live'
+
+  // Safer default: do not assume live in production unless explicitly configured.
+  return 'test'
+}
+
+function getCreemBaseUrl(mode: 'live' | 'test'): string {
+  const explicit = process.env.CREEM_API_BASE_URL
+  if (explicit) return explicit.replace(/\/+$/, '')
+
+  return mode === 'test'
+    ? 'https://test-api.creem.io'
+    : 'https://api.creem.io'
+}
+
+function getCreemApiKey(mode: 'live' | 'test'): string | undefined {
+  return (
+    (mode === 'live' ? process.env.CREEM_API_KEY_LIVE : process.env.CREEM_API_KEY_TEST) ||
+    process.env.CREEM_API_KEY
+  )
+}
+
 // Helper function to get the site URL from request
 function getSiteUrl(request: NextRequest): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
@@ -18,16 +126,65 @@ function getSiteUrl(request: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { productId, planId } = await request.json()
+    const { productId, planId } = await request.json().catch(() => ({}))
 
-    if (!productId) {
+    const mode = getCreemMode()
+    const resolvedProductId = resolveCheckoutProductId({ productId, planId, mode })
+
+    const livePaymentsEnabledRaw = parseBooleanEnv(
+      process.env.CREEM_LIVE_PAYMENTS_ENABLED
+    )
+    const livePaymentsEnabled =
+      livePaymentsEnabledRaw ?? (mode === 'test' ? true : false)
+    if (mode === 'live' && livePaymentsEnabled !== true) {
       return NextResponse.json(
-        { error: "Product ID is required" },
+        {
+          error:
+            'Creem live payments are not enabled for this account yet. Complete Creem account verification/onboarding (or switch to Test Mode) and try again.',
+        },
+        { status: 403 }
+      )
+    }
+
+    if (!resolvedProductId) {
+      return NextResponse.json(
+        {
+          error:
+            'Creem product ID is not configured. Set CREEM_PRODUCT_PRO_ID / CREEM_PRODUCT_ENTERPRISE_ID (recommended) or NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID / NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID (see CREEM_SETUP.md).',
+          ...(process.env.NODE_ENV !== 'production'
+            ? {
+                debug: {
+                  planId,
+                  hasCreemProId: !!process.env.CREEM_PRODUCT_PRO_ID,
+                  hasCreemEnterpriseId: !!process.env.CREEM_PRODUCT_ENTERPRISE_ID,
+                  hasPublicProId: !!process.env.NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID,
+                  hasPublicEnterpriseId:
+                    !!process.env.NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID,
+                },
+              }
+            : {}),
+        },
         { status: 400 }
       )
     }
 
-    if (!process.env.CREEM_API_KEY) {
+    // Avoid calling Creem with placeholder IDs (commonly left as defaults in docs),
+    // which results in confusing 404s from the upstream API.
+    if (
+      resolvedProductId === 'pro_monthly' ||
+      resolvedProductId === 'enterprise_monthly'
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Creem product ID is not configured. Set CREEM_PRODUCT_PRO_ID / CREEM_PRODUCT_ENTERPRISE_ID (recommended) or NEXT_PUBLIC_CREEM_PRODUCT_PRO_ID / NEXT_PUBLIC_CREEM_PRODUCT_ENTERPRISE_ID (see CREEM_SETUP.md).',
+        },
+        { status: 500 }
+      )
+    }
+
+    const creemApiKey = getCreemApiKey(mode)
+    if (!creemApiKey) {
       return NextResponse.json(
         { error: "Creem API key is not configured" },
         { status: 500 }
@@ -36,28 +193,69 @@ export async function POST(request: NextRequest) {
 
     const siteUrl = getSiteUrl(request)
 
+    const requestId =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+    const requestBody = {
+      product_id: resolvedProductId,
+      request_id: requestId,
+      units: 1,
+      success_url: `${siteUrl}/pricing/success`,
+      metadata: {
+        plan_id: planId,
+      },
+    }
+
     // Create checkout session with Creem
-    const creemResponse = await fetch('https://api.creem.io/v1/checkout/sessions', {
+    const creemUrl = `${getCreemBaseUrl(mode)}/v1/checkouts`
+    let creemResponse = await fetch(creemUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.CREEM_API_KEY,
+        Accept: 'application/json',
+        'x-api-key': creemApiKey,
       },
-      body: JSON.stringify({
-        product_id: productId,
-        success_url: `${siteUrl}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${siteUrl}/pricing?canceled=true`,
-        metadata: {
-          plan_id: planId,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!creemResponse.ok) {
-      const errorData = await creemResponse.json().catch(() => ({}))
-      console.error('Creem API error:', errorData)
+      const errorData = await creemResponse.json().catch(async () => {
+        const text = await creemResponse.text().catch(() => '')
+        return { raw: text }
+      })
+
+      console.error('Creem API error:', {
+        status: creemResponse.status,
+        url: creemUrl,
+        planId,
+        productId: resolvedProductId,
+        error: errorData,
+      })
+
+      let message =
+        (errorData && (errorData.message || errorData.error || errorData.detail)) ||
+        'Failed to create checkout session'
+
+      if (creemResponse.status === 401 || creemResponse.status === 403) {
+        message = `${message}. Verify CREEM_API_KEY is a valid Creem API key and matches the environment (Production vs Test Mode) for product ${resolvedProductId}.`
+      }
+
       return NextResponse.json(
-        { error: errorData.message || "Failed to create checkout session" },
+        {
+          error: message,
+          ...(process.env.NODE_ENV !== 'production'
+            ? {
+                debug: {
+                  upstreamStatus: creemResponse.status,
+                  planId,
+                  productId: resolvedProductId,
+                  traceId: errorData?.trace_id,
+                },
+              }
+            : {}),
+        },
         { status: creemResponse.status }
       )
     }
@@ -73,7 +271,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       checkoutUrl: checkoutData.checkout_url,
-      sessionId: checkoutData.session_id,
+      sessionId: checkoutData.id,
+      requestId,
+      mode: checkoutData.mode,
     })
   } catch (error: any) {
     console.error('Checkout error:', error)
@@ -83,4 +283,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

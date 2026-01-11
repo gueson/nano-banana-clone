@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -9,9 +9,13 @@ export async function GET() {
   } = await supabase.auth.getUser()
 
   if (error) {
+    // Not logged in is expected for anonymous users; keep UI calm.
+    if (error.message.toLowerCase().includes('auth session missing')) {
+      return NextResponse.json({ user: null })
+    }
+
     return NextResponse.json({ error: error.message }, { status: 401 })
   }
 
   return NextResponse.json({ user })
 }
-

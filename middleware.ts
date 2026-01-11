@@ -43,9 +43,9 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // The client automatically refreshes the session via onAuthStateChange
-  // No need to explicitly call getSession() or getUser() here
+  // Refresh the session if needed and ensure updated cookies are set.
   // https://supabase.com/docs/guides/auth/server-side/nextjs
+  await supabase.auth.getUser()
 
   // Note: We're not forcing login here - the app allows anonymous access
   // If you want to protect certain routes, add route-specific checks
@@ -65,4 +65,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-

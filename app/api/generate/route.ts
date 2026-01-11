@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
         }
       } else if (imageData.url) {
         generatedImage = imageData.url
+      } else if (imageData.image_url?.url) {
+        generatedImage = imageData.image_url.url
       } else if (imageData.data) {
         // Base64 data with mime type
         const mimeType = imageData.mime_type || "image/png"
@@ -164,4 +166,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

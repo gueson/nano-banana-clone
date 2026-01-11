@@ -1,32 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
+import { getSiteUrlFromRequest } from '@/lib/site-url'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-function getSiteUrl(request: Request): string {
-  // 优先使用环境变量中配置的站点地址（推荐在 Vercel 上配置）
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL
-  }
-
-  // 在 Vercel 等代理环境中，使用 x-forwarded-host / x-forwarded-proto
-  const forwardedHost = request.headers.get('x-forwarded-host')
-  if (forwardedHost) {
-    const protocol = request.headers.get('x-forwarded-proto') || 'https'
-    return `${protocol}://${forwardedHost}`
-  }
-
-  // 本地或其他环境回退到请求本身的 origin
-  const { origin } = new URL(request.url)
-  return origin
-}
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const provider = searchParams.get('provider') ?? 'google'
   const next = searchParams.get('next') ?? '/'
 
   const supabase = await createClient()
 
-  const siteUrl = getSiteUrl(request)
+  const siteUrl = getSiteUrlFromRequest(request)
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider as 'google',
@@ -45,4 +29,3 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ error: 'Failed to initiate login' }, { status: 500 })
 }
-
