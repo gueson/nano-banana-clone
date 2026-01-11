@@ -19,24 +19,28 @@ export function getSiteUrlFromRequest(request: Request): string {
   const nodeEnv = (process.env.NODE_ENV || '').toLowerCase()
   const vercelEnv = (process.env.VERCEL_ENV || '').toLowerCase()
 
-  const originFromRequest = (() => {
-    const url = new URL(request.url)
-    const forwardedHost = request.headers.get('x-forwarded-host')
-    if (forwardedHost) {
-      const forwardedProto = request.headers.get('x-forwarded-proto')
-      const protocol = forwardedProto || url.protocol.replace(':', '')
-      return `${protocol}://${forwardedHost}`
-    }
+  const url = new URL(request.url)
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto')
 
-    return url.origin
-  })()
+  const originFromRequest = forwardedHost
+    ? `${forwardedProto || url.protocol.replace(':', '')}://${forwardedHost}`
+    : url.origin
 
   const normalizedOrigin = normalizeUrl(originFromRequest)
 
-  // In local dev and Vercel preview, prefer the request origin to avoid
-  // redirecting OAuth flows to the production domain.
   const isProd = nodeEnv === 'production' && vercelEnv !== 'preview'
-  if (!isProd && normalizedOrigin) {
+
+  // In dev/preview, always prefer the request origin so links and OAuth redirects
+  // match the current environment.
+  if (!isProd) {
+    return normalizedOrigin || url.origin
+  }
+
+  // In production, prefer the request origin if it's a real (non-localhost) host.
+  // This prevents accidental misconfig (e.g. NEXT_PUBLIC_SITE_URL=localhost) from
+  // breaking OAuth redirects on Vercel/custom domains.
+  if (normalizedOrigin && !isLocalhostUrl(normalizedOrigin)) {
     return normalizedOrigin
   }
 
@@ -46,11 +50,8 @@ export function getSiteUrlFromRequest(request: Request): string {
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
 
   if (configured) {
-    const normalizedConfigured = normalizeUrl(configured)
-    if (!isLocalhostUrl(normalizedConfigured)) {
-      return normalizedConfigured
-    }
+    return normalizeUrl(configured)
   }
 
-  return normalizedOrigin || new URL(request.url).origin
+  return normalizedOrigin || url.origin
 }

@@ -1,5 +1,5 @@
-﻿import { createClient } from '@/lib/supabase/server'
 import { getSiteUrlFromRequest } from '@/lib/site-url'
+import { createRouteHandlerClient } from '@/lib/supabase/route-handler'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -8,9 +8,10 @@ export async function GET(request: NextRequest) {
   const provider = searchParams.get('provider') ?? 'google'
   const next = searchParams.get('next') ?? '/'
 
-  const supabase = await createClient()
-
   const siteUrl = getSiteUrlFromRequest(request)
+
+  const cookieResponse = NextResponse.next()
+  const supabase = createRouteHandlerClient(request, cookieResponse)
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider as 'google',
@@ -24,7 +25,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (data.url) {
-    return NextResponse.redirect(data.url)
+    const redirectResponse = NextResponse.redirect(data.url)
+
+    cookieResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+      redirectResponse.cookies.set(name, value, options)
+    })
+
+    return redirectResponse
   }
 
   return NextResponse.json({ error: 'Failed to initiate login' }, { status: 500 })
