@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSiteUrlFromRequest } from "@/lib/site-url"
+import { createClient } from "@/lib/supabase/server"
 
 function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (value == null) return undefined
@@ -97,6 +98,30 @@ function getCreemFallbackToTestMode(): boolean {
 export async function POST(request: NextRequest) {
   try {
     const { productId, planId } = await request.json().catch(() => ({}))
+
+    const supabase = await createClient()
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError) {
+      if (userError.message.toLowerCase().includes("auth session missing")) {
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        )
+      }
+
+      return NextResponse.json({ error: userError.message }, { status: 401 })
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      )
+    }
 
     const configuredMode = getCreemMode()
 

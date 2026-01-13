@@ -73,6 +73,7 @@ type CreemConfig = {
 export function Pricing() {
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
   const [creemConfig, setCreemConfig] = useState<CreemConfig | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const plans = getPlans()
   const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
   const salesEmail = process.env.NEXT_PUBLIC_SALES_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
@@ -92,6 +93,17 @@ export function Pricing() {
         setCreemConfig(null)
       })
 
+    fetch("/api/auth/user")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return
+        setIsLoggedIn(!!data?.user)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setIsLoggedIn(false)
+      })
+
     return () => {
       cancelled = true
     }
@@ -107,6 +119,32 @@ export function Pricing() {
     return creemConfig.fallbackToTest !== true
   }, [creemConfig, configuredMode])
 
+  const startLogin = (next: string) => {
+    window.location.href = `/api/auth/login?provider=google&next=${encodeURIComponent(next)}`
+  }
+
+  const ensureLoggedIn = async (planId: string) => {
+    if (isLoggedIn === true) return true
+
+    try {
+      const response = await fetch("/api/auth/user")
+      if (response.ok) {
+        const data = await response.json()
+        const loggedIn = !!data?.user
+        setIsLoggedIn(loggedIn)
+        if (loggedIn) return true
+      }
+    } catch {
+      setIsLoggedIn(false)
+    }
+
+    const current = new URL(window.location.href)
+    current.searchParams.set("subscribe", planId)
+    alert("Please sign in to subscribe.")
+    startLogin(`${current.pathname}${current.search}${current.hash}`)
+    return false
+  }
+
   const handleSubscribe = async (plan: Plan) => {
     if (plan.id === "free") {
       window.location.href = "/#editor"
@@ -118,6 +156,11 @@ export function Pricing() {
         "Enterprise Plan Inquiry"
       )}`
       return
+    }
+
+    if (plan.id === "pro") {
+      const ok = await ensureLoggedIn(plan.id)
+      if (!ok) return
     }
 
     if (plan.id === "pro" && !creemConfig) {
@@ -150,6 +193,14 @@ export function Pricing() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 401) {
+          const current = new URL(window.location.href)
+          current.searchParams.set("subscribe", plan.id)
+          alert("Please sign in to subscribe.")
+          startLogin(`${current.pathname}${current.search}${current.hash}`)
+          return
+        }
+
         throw new Error(data.error || "Failed to create checkout session")
       }
 
@@ -164,6 +215,24 @@ export function Pricing() {
       setLoadingPlanId(null)
     }
   }
+
+  useEffect(() => {
+    if (isLoggedIn !== true) return
+    if (!creemConfig) return
+    if (loadingPlanId) return
+
+    const url = new URL(window.location.href)
+    const subscribe = url.searchParams.get("subscribe")
+    if (subscribe !== "pro") return
+
+    url.searchParams.delete("subscribe")
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
+
+    const plan = plans.find((p) => p.id === "pro")
+    if (!plan) return
+    handleSubscribe(plan)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, creemConfig])
 
   return (
     <section id="pricing" className="py-20 md:py-32 bg-muted/30">

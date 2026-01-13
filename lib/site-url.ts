@@ -44,14 +44,19 @@ export function getSiteUrlFromRequest(request: Request): string {
     return normalizedOrigin
   }
 
-  const configured =
-    process.env.SITE_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
+  const candidates = [
+    process.env.SITE_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '',
+  ]
 
-  if (configured) {
-    return normalizeUrl(configured)
-  }
+  const configured = candidates.find((value) => {
+    if (!value) return false
+    const normalized = normalizeUrl(value)
+    return normalized && !isLocalhostUrl(normalized)
+  })
+
+  if (configured) return normalizeUrl(configured)
 
   return normalizedOrigin || url.origin
 }
