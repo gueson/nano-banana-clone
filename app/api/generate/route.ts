@@ -1,24 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-
-// Helper function to get the site URL from request
-function getSiteUrl(request: NextRequest): string {
-  // First, check environment variable
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL
-  }
-
-  // In production (Vercel), use x-forwarded-host header
-  const forwardedHost = request.headers.get('x-forwarded-host')
-  if (forwardedHost) {
-    const protocol = request.headers.get('x-forwarded-proto') || 'https'
-    return `${protocol}://${forwardedHost}`
-  }
-
-  // Fallback to request origin
-  const origin = new URL(request.url).origin
-  return origin
-}
+import { getSiteUrlFromRequest } from '@/lib/site-url'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create OpenAI client with dynamic site URL
-    const siteUrl = getSiteUrl(request)
+    const siteUrl = getSiteUrlFromRequest(request)
     const openai = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: process.env.OPENROUTER_API_KEY,

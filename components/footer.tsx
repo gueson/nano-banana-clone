@@ -19,17 +19,17 @@ export function Footer() {
             <h4 className="font-semibold mb-3">Product</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="#editor" className="hover:text-foreground transition-colors">
+                <a href="/#editor" className="hover:text-foreground transition-colors">
                   Editor
                 </a>
               </li>
               <li>
-                <a href="#features" className="hover:text-foreground transition-colors">
+                <a href="/#features" className="hover:text-foreground transition-colors">
                   Features
                 </a>
               </li>
               <li>
-                <a href="#showcase" className="hover:text-foreground transition-colors">
+                <a href="/#showcase" className="hover:text-foreground transition-colors">
                   Showcase
                 </a>
               </li>
@@ -45,7 +45,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#faq" className="hover:text-foreground transition-colors">
+                <a href="/#faq" className="hover:text-foreground transition-colors">
                   FAQ
                 </a>
               </li>

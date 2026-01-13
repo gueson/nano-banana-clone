@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getSiteUrlFromRequest } from "@/lib/site-url"
 
 function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (value == null) return undefined
@@ -93,21 +94,6 @@ function getCreemFallbackToTestMode(): boolean {
 }
 
 // Helper function to get the site URL from request
-function getSiteUrl(request: NextRequest): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL
-  }
-
-  const forwardedHost = request.headers.get("x-forwarded-host")
-  if (forwardedHost) {
-    const protocol = request.headers.get("x-forwarded-proto") || "https"
-    return `${protocol}://${forwardedHost}`
-  }
-
-  const origin = new URL(request.url).origin
-  return origin
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { productId, planId } = await request.json().catch(() => ({}))
@@ -175,7 +161,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Creem API key is not configured" }, { status: 500 })
     }
 
-    const siteUrl = getSiteUrl(request)
+    const siteUrl = getSiteUrlFromRequest(request)
 
     const requestId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
