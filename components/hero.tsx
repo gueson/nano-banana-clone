@@ -18,7 +18,6 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden border-b border-border bg-background py-20 md:py-32">
-      {/* Decorative bananas */}
       <div className="absolute top-10 right-10 text-6xl opacity-20 rotate-12 hidden lg:block">🍌</div>
       <div className="absolute bottom-20 left-10 text-8xl opacity-10 -rotate-12 hidden lg:block">🍌</div>
       <div className="absolute top-1/2 left-1/4 text-4xl opacity-10 rotate-45 hidden lg:block">🍌</div>
@@ -27,15 +26,14 @@ export function Hero() {
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent/10 px-4 py-2 text-sm font-medium">
             <span className="text-xl">🍌</span>
-            <span>The AI model that outperforms Flux Kontext</span>
+            <span>AI image editing with text prompts</span>
           </div>
 
           <h1 className="mb-6 text-5xl font-bold tracking-tight md:text-7xl text-balance">Nano Banana</h1>
 
           <p className="mb-8 text-lg md:text-xl text-muted-foreground text-pretty leading-relaxed max-w-3xl mx-auto">
-            Transform any image with simple text prompts. Nano-banana&apos;s advanced model delivers consistent
-            character editing and scene preservation that surpasses Flux Kontext. Experience the future of AI image
-            editing.
+            Transform images with simple text prompts. Upload a photo, describe the change you want, and get edited
+            results in seconds.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

@@ -1,5 +1,5 @@
 export function Footer() {
-  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"
+  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
 
   return (
     <footer className="border-t border-border py-12 bg-background">
@@ -7,7 +7,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🍌</span>
+              {/* <span className="text-2xl">馃崒</span> */}
               <span className="text-xl font-bold">Nano Banana</span>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -83,7 +83,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Nano Banana. All rights reserved.</p>
+          <p>漏 {new Date().getFullYear()} Nano Banana. All rights reserved.</p>
         </div>
       </div>
     </footer>

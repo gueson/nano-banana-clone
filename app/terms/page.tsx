@@ -3,7 +3,7 @@ import { Footer } from "@/components/footer"
 
 export default function TermsPage() {
   const supportEmail =
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
   const effectiveDate = "2026-01-10"
 
   return (
@@ -51,8 +51,7 @@ export default function TermsPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">Refunds</h2>
             <p>
-              If a refund policy is offered, it will be displayed on the Pricing
-              page. For billing questions, contact support.
+              Unless required by applicable law, we do not provide refunds for unused time or partial billing periods. For billing questions, contact support.
             </p>
           </section>
 

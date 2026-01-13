@@ -26,9 +26,9 @@ export default function PricingSuccessPage() {
                   What&apos;s next?
                 </p>
                 <ul className="text-sm space-y-1">
-                  <li>• Start creating amazing images with AI</li>
-                  <li>• Access all premium features</li>
-                  <li>• Check your account for subscription details</li>
+                  <li>鈥?Start creating amazing images with AI</li>
+                  <li>鈥?Access all premium features</li>
+                  <li>鈥?Check your account for subscription details</li>
                 </ul>
               </div>
               <div className="flex flex-col gap-2">
@@ -46,6 +46,7 @@ export default function PricingSuccessPage() {
     </main>
   )
 }
+
 
 
 

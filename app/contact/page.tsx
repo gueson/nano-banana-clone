@@ -3,7 +3,7 @@ import { Footer } from "@/components/footer"
 
 export default function ContactPage() {
   const supportEmail =
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
 
   return (
     <main className="min-h-screen">

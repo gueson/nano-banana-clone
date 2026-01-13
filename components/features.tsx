@@ -6,24 +6,25 @@ const features = [
     icon: MessageSquare,
     title: "Natural Language Editing",
     description:
-      "Edit images using simple text prompts. Nano-banana AI understands complex instructions like GPT for images",
+      "Edit images using simple text prompts. Describe what you want to change and get an updated result.",
   },
   {
     icon: Users,
     title: "Character Consistency",
     description:
-      "Maintain perfect character details across edits. This model excels at preserving faces and identities",
+      "Helps maintain key character details across edits, especially for faces and identity-sensitive changes.",
   },
   {
     icon: Layers,
     title: "Scene Preservation",
-    description: "Seamlessly blend edits with original backgrounds. Superior scene fusion compared to Flux Kontext",
+    description:
+      "Blend edits with the original scene so results look coherent with the existing background.",
   },
   {
     icon: Zap,
     title: "One-Shot Editing",
     description:
-      "Perfect results in a single attempt. Nano-banana solves one-shot image editing challenges effortlessly",
+      "Get results quickly with a single prompt, with the option to iterate when needed.",
   },
   {
     icon: Images,
@@ -32,8 +33,9 @@ const features = [
   },
   {
     icon: Sparkles,
-    title: "AI UGC Creation",
-    description: "Create consistent AI influencers and UGC content. Perfect for social media and marketing campaigns",
+    title: "AI Content Creation",
+    description:
+      "Create variations for social media and marketing, including product-style imagery.",
   },
 ]
 
@@ -44,7 +46,7 @@ export function Features() {
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-balance">Core Features</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">
-            Why Choose Nano Banana? Revolutionize your photo editing with natural language understanding
+            A simple workflow for prompt-based image editing.
           </p>
         </div>
 

@@ -3,7 +3,7 @@ import { Footer } from "@/components/footer"
 
 export default function PrivacyPage() {
   const supportEmail =
-    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@lincy.online"
   const effectiveDate = "2026-01-10"
 
   return (
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-semibold">Sharing</h2>
             <p>
               We may share information with service providers that help us run
-              the product (e.g., hosting, analytics, and payment processing). We
+              the product (e.g., hosting, analytics, and payment processing such as Creem). We
               may also share information if required by law or to protect our
               users and services.
             </p>
