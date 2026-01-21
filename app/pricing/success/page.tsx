@@ -1,8 +1,17 @@
+import { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "Payment Success - Nano Banana AI Image Editor",
+  description: "Your payment has been processed successfully. Start using Nano Banana AI Image Editor today.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/pricing/success`,
+  },
+}
 
 export default function PricingSuccessPage() {
   return (

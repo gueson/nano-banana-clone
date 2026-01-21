@@ -1,6 +1,15 @@
+import { Metadata } from "next"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+
+export const metadata: Metadata = {
+  title: "Authentication Error - Nano Banana AI Image Editor",
+  description: "There was an error during authentication. Please try again or contact support for assistance.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/auth-code-error`,
+  },
+}
 
 export default function AuthCodeError() {
   return (

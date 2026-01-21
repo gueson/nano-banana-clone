@@ -1,5 +1,14 @@
+import { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+
+export const metadata: Metadata = {
+  title: "Terms of Service - Nano Banana AI Image Editor",
+  description: "Read the terms of service for Nano Banana AI Image Editor. Understand the rules and guidelines for using our service.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/terms`,
+  },
+}
 
 export default function TermsPage() {
   const supportEmail =

@@ -1,5 +1,14 @@
+import { Metadata } from "next"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+
+export const metadata: Metadata = {
+  title: "Privacy Policy - Nano Banana AI Image Editor",
+  description: "Read the privacy policy for Nano Banana AI Image Editor. Learn how we collect, use, and protect your information.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/privacy`,
+  },
+}
 
 export default function PrivacyPage() {
   const supportEmail =
