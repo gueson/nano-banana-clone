@@ -5,7 +5,13 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
-      // Disallow AI training and spam crawlers (specific rules first)
+      // Default rule: allow all crawlers
+      {
+        userAgent: '*',
+        allow: '/',
+      },
+      /*
+      // Disabled AI training and spam crawler rules
       {
         userAgent: 'GPTBot',
         disallow: '/',
@@ -38,11 +44,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: 'meta-externalagent',
         disallow: '/',
       },
-      // Default rule: allow all crawlers (generic rule last)
-      {
-        userAgent: '*',
-        allow: '/',
-      },
+      */
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
   };
